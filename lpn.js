@@ -12,9 +12,9 @@
   title.textContent = 'IR7 Thermal Label System - Ultra High Performance Pro';
   head.appendChild(title);
 
-  // Load External CDN Libraries
+  // Load External CDN Libraries (KJUA SVG Vector QR Library & jsPDF)
   const qrScript = document.createElement('script');
-  qrScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  qrScript.src = 'https://cdn.jsdelivr.net/npm/kjua@0.9.0/dist/kjua.min.js';
   head.appendChild(qrScript);
 
   const pdfScript = document.createElement('script');
@@ -313,8 +313,8 @@
     
     .top-row { display: flex; justify-content: space-between; align-items: flex-start; height: 13.5mm; }
     .qr-group { display: flex; gap: 1.2mm; }
-    .qr-code { width: 12mm; height: 12mm; }
-    .qr-code img { width: 100% !important; height: 100% !important; image-rendering: pixelated; }
+    .qr-code { width: 12mm; height: 12mm; display: flex; align-items: center; justify-content: center; }
+    .qr-code svg, .qr-code canvas, .qr-code img { width: 100% !important; height: 100% !important; shape-rendering: crispEdges; image-rendering: pixelated; }
     
     .right-meta { text-align: right; color: #000; display: flex; flex-direction: column; align-items: flex-end; }
     .date-text { font-size: 7.5pt; font-weight: 900; line-height: 1; letter-spacing: -0.2px; }
@@ -659,7 +659,7 @@
     reader.readAsText(file);
   });
 
-  // ULTRA FAST BATCHING GENERATOR ENGINE (1000+ LABELS CHUNK RENDERING)
+  // ULTRA VECTOR HIGH-PRECISION SCANNER QR ENGINE (KJUA SVG RENDER)
   let generatedDataList = [];
 
   btnGenerate.onclick = () => {
@@ -719,7 +719,6 @@
       });
     }
 
-    // CHUNKED DOM RENDERING LOOP (50 LABELS PER BATCH) TO PREVENT BROWSER FREEZE
     let index = 0;
     const chunkSize = 50;
 
@@ -733,18 +732,36 @@
 
       previewArea.appendChild(fragment);
 
-      // Async QR Rendering for current batch
+      // HIGH-DPI ULTRA CRISP VECTOR SVG QR RENDER
       for (let i = index; i < limit; i++) {
         const item = generatedDataList[i];
+        const qrText = `${item.toteCode}_${item.date}`;
+
         ['qr1_', 'qr2_', 'qr3_'].forEach(prefix => {
           const targetNode = document.getElementById(`${prefix}${item.idx}`);
-          if (targetNode && window.QRCode) {
-            new QRCode(targetNode, {
-              text: `${item.toteCode}_${item.date}`,
-              width: 50,
-              height: 50,
-              correctLevel: QRCode.CorrectLevel.M
-            });
+          if (targetNode) {
+            targetNode.innerHTML = '';
+            
+            // KJUA SVG Vector Generation Engine (Zero Pixelation / Instant Scan)
+            if (window.kjua) {
+              const el = window.kjua({
+                render: 'svg',
+                text: qrText,
+                size: 80,
+                fill: '#000000',
+                back: '#ffffff',
+                crisp: true,
+                quiet: 0
+              });
+              targetNode.appendChild(el);
+            } else if (window.QRCode) {
+              new QRCode(targetNode, {
+                text: qrText,
+                width: 50,
+                height: 50,
+                correctLevel: QRCode.CorrectLevel.M
+              });
+            }
           }
         });
       }
@@ -842,10 +859,6 @@
       format: [currentWidth, currentHeight]
     });
 
-    const qrCanvas = document.createElement('canvas');
-    qrCanvas.width = 100;
-    qrCanvas.height = 100;
-
     for (let i = 0; i < generatedDataList.length; i++) {
       const data = generatedDataList[i];
       if (i > 0) doc.addPage([currentWidth, currentHeight], 'landscape');
@@ -855,12 +868,16 @@
       doc.setLineWidth(0.4);
       doc.rect(0.5, 0.5, currentWidth - 1, currentHeight - 1);
 
-      // Render Base64 QR Image to PDF Canvas Directly
-      const qr1Node = document.querySelector(`#qr1_${data.idx} img`);
-      if (qr1Node && qr1Node.src) {
-        doc.addImage(qr1Node.src, 'PNG', 2, 1.5, 12, 12);
-        doc.addImage(qr1Node.src, 'PNG', 15, 1.5, 12, 12);
-        doc.addImage(qr1Node.src, 'PNG', 28, 1.5, 12, 12);
+      // Render High DPI Vector SVG QR to PDF Canvas Directly
+      const qr1Svg = document.querySelector(`#qr1_${data.idx} svg`);
+      if (qr1Svg) {
+        const xml = new XMLSerializer().serializeToString(qr1Svg);
+        const svg64 = btoa(xml);
+        const image64 = 'data:image/svg+xml;base64,' + svg64;
+
+        doc.addImage(image64, 'SVG', 2, 1.5, 12, 12);
+        doc.addImage(image64, 'SVG', 15, 1.5, 12, 12);
+        doc.addImage(image64, 'SVG', 28, 1.5, 12, 12);
       }
 
       // Add Text Meta Vector Directly
