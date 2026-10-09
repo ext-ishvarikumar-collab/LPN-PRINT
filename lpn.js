@@ -659,7 +659,7 @@
     reader.readAsText(file);
   });
 
-  // ULTRA VECTOR HIGH-PRECISION SCANNER QR ENGINE (KJUA SVG RENDER)
+  // ULTRA VECTOR HIGH-PRECISION SCANNER QR ENGINE (ONLY GIVEN ID IN QR)
   let generatedDataList = [];
 
   btnGenerate.onclick = () => {
@@ -732,10 +732,10 @@
 
       previewArea.appendChild(fragment);
 
-      // HIGH-DPI ULTRA CRISP VECTOR SVG QR RENDER
+      // HIGH-DPI ULTRA CRISP VECTOR SVG QR RENDER (ONLY GIVEN ID)
       for (let i = index; i < limit; i++) {
         const item = generatedDataList[i];
-        const qrText = `${item.toteCode}_${item.date}`;
+        const qrText = String(item.toteCode); // FIXED: ONLY GIVEN ID ENCODED IN QR
 
         ['qr1_', 'qr2_', 'qr3_'].forEach(prefix => {
           const targetNode = document.getElementById(`${prefix}${item.idx}`);
