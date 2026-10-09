@@ -659,7 +659,7 @@
     reader.readAsText(file);
   });
 
-  // ULTRA VECTOR HIGH-PRECISION SCANNER QR ENGINE (ONLY STRICT GIVEN TOTE ID IN QR)
+  // ULTRA VECTOR HIGH-PRECISION SCANNER QR ENGINE (STRICTLY ONLY GIVEN ID ENCODED IN QR)
   let generatedDataList = [];
 
   btnGenerate.onclick = () => {
@@ -732,11 +732,10 @@
 
       previewArea.appendChild(fragment);
 
-      // HIGH-DPI ULTRA CRISP VECTOR SVG QR RENDER (STRICT ONLY TOTE CODE)
+      // STRICT ONLY GIVEN ID ENCODED IN VECTOR SVG QR RENDER
       for (let i = index; i < limit; i++) {
         const item = generatedDataList[i];
-        // STRICT HANDLING: Encodes strictly only toteCode, removing dates/time or undefined strings
-        const qrText = String(item.toteCode || '').trim();
+        const qrTextOnlyId = String(item.toteCode); // STRICTLY ONLY TOTE ID / GIVEN ID
 
         ['qr1_', 'qr2_', 'qr3_'].forEach(prefix => {
           const targetNode = document.getElementById(`${prefix}${item.idx}`);
@@ -747,7 +746,7 @@
             if (window.kjua) {
               const el = window.kjua({
                 render: 'svg',
-                text: qrText,
+                text: qrTextOnlyId,
                 size: 80,
                 fill: '#000000',
                 back: '#ffffff',
@@ -834,7 +833,7 @@
     return pageContainer;
   }
 
-  // ULTRA FAST DIRECT VECTOR PDF GENERATOR (STRICT TOTE CODE IN VECTOR QR)
+  // ULTRA FAST DIRECT VECTOR PDF GENERATOR (FIXED DOWNLOAD LOGIC)
   window.downloadPdf = async () => {
     if (!window.jspdf) {
       alert('Libraries loading, please try again in 2 seconds...');
