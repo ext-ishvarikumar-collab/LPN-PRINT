@@ -742,7 +742,7 @@
           if (targetNode) {
             targetNode.innerHTML = '';
             
-            // KJUA SVG Vector Generation Engine (Zero Pixelation / Instant Scan)
+            // KJUA SVG Vector Generation Engine
             if (window.kjua) {
               const el = window.kjua({
                 render: 'svg',
@@ -754,13 +754,6 @@
                 quiet: 0
               });
               targetNode.appendChild(el);
-            } else if (window.QRCode) {
-              new QRCode(targetNode, {
-                text: qrText,
-                width: 50,
-                height: 50,
-                correctLevel: QRCode.CorrectLevel.M
-              });
             }
           }
         });
@@ -840,7 +833,7 @@
     return pageContainer;
   }
 
-  // ULTRA FAST DIRECT VECTOR PDF GENERATOR (1000+ LABELS IN SECONDS)
+  // ULTRA FAST DIRECT VECTOR PDF GENERATOR (FIXED DOWNLOAD LOGIC)
   window.downloadPdf = async () => {
     if (!window.jspdf) {
       alert('Libraries loading, please try again in 2 seconds...');
@@ -859,6 +852,31 @@
       format: [currentWidth, currentHeight]
     });
 
+    // Helper Canvas for Rendering Crisp PNG from SVG for jsPDF Compatibility
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 120;
+    tempCanvas.height = 120;
+    const ctx = tempCanvas.getContext('2d');
+
+    function getQrDataUrl(svgElement) {
+      return new Promise((resolve) => {
+        if (!svgElement) return resolve(null);
+        const xml = new XMLSerializer().serializeToString(svgElement);
+        const svgBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+        
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+          ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+          resolve(tempCanvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(null);
+        img.src = svgBase64;
+      });
+    }
+
     for (let i = 0; i < generatedDataList.length; i++) {
       const data = generatedDataList[i];
       if (i > 0) doc.addPage([currentWidth, currentHeight], 'landscape');
@@ -868,26 +886,24 @@
       doc.setLineWidth(0.4);
       doc.rect(0.5, 0.5, currentWidth - 1, currentHeight - 1);
 
-      // Render High DPI Vector SVG QR to PDF Canvas Directly
-      const qr1Svg = document.querySelector(`#qr1_${data.idx} svg`);
-      if (qr1Svg) {
-        const xml = new XMLSerializer().serializeToString(qr1Svg);
-        const svg64 = btoa(xml);
-        const image64 = 'data:image/svg+xml;base64,' + svg64;
+      // Render Crisp QR Images
+      const qrSvg = document.querySelector(`#qr1_${data.idx} svg`);
+      const qrDataUrl = await getQrDataUrl(qrSvg);
 
-        doc.addImage(image64, 'SVG', 2, 1.5, 12, 12);
-        doc.addImage(image64, 'SVG', 15, 1.5, 12, 12);
-        doc.addImage(image64, 'SVG', 28, 1.5, 12, 12);
+      if (qrDataUrl) {
+        doc.addImage(qrDataUrl, 'PNG', 2, 1.5, 12, 12);
+        doc.addImage(qrDataUrl, 'PNG', 15, 1.5, 12, 12);
+        doc.addImage(qrDataUrl, 'PNG', 28, 1.5, 12, 12);
       }
 
       // Add Text Meta Vector Directly
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.text(data.date, currentWidth - 2, 4, { align: 'right' });
-      doc.text(data.timeStr, currentWidth - 2, 7.5, { align: 'right' });
+      doc.text(String(data.date), currentWidth - 2, 4, { align: 'right' });
+      doc.text(String(data.timeStr), currentWidth - 2, 7.5, { align: 'right' });
 
       doc.setFontSize(7);
-      doc.text(data.matchedStoreCode, currentWidth - 2, 10.5, { align: 'right' });
+      doc.text(String(data.matchedStoreCode), currentWidth - 2, 10.5, { align: 'right' });
 
       if (!data.isBatch && data.gridSeq) {
         doc.rect(currentWidth - 12, 12, 10, 4);
